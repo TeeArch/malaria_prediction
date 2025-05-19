@@ -29,7 +29,7 @@ def train_model():
     data['Malaria'] = (
         (data['Fever'] & data['Headache']) | 
         ((data['Fever'] | data['Nausea']) & (data['Fatigue'] | data['Muscle_Pain'])) | 
-        (data['Fever'] & np.random.rand(data_size) > 0.3)
+        ((data['Fever'] == 1) & (np.random.rand(data_size) > 0.3))
     ).astype(int)
 
     # Train the XGBoost model
