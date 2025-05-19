@@ -2,18 +2,19 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import accuracy_score
-import joblib
+from xgboost import XGBClassifier
+from sklearn.metrics import accuracy_score, confusion_matrix
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 # Streamlit UI
 st.set_page_config(page_title='Malaria Prediction Model', page_icon='🦟', layout='centered')
 st.title('🦟 Malaria Prediction Model')
-st.write("This is a robust Malaria prediction model using RandomForest, deployed with Streamlit.")
+st.write("This is a robust Malaria prediction model using XGBoost, deployed with Streamlit.")
 
 @st.cache_resource
 def train_model():
-    # Simulate a Synthetic Dataset
+    # Simulate a More Realistic Synthetic Dataset
     np.random.seed(42)
     data_size = 1000
     data = pd.DataFrame({
@@ -21,25 +22,34 @@ def train_model():
         'Headache': np.random.randint(0, 2, data_size),
         'Muscle_Pain': np.random.randint(0, 2, data_size),
         'Nausea': np.random.randint(0, 2, data_size),
-        'Fatigue': np.random.randint(0, 2, data_size),
-        'Malaria': np.random.randint(0, 2, data_size)
+        'Fatigue': np.random.randint(0, 2, data_size)
     })
 
-    # Train the RandomForest model
+    # Create realistic Malaria patterns
+    data['Malaria'] = ((data['Fever'] & data['Headache']) | (data['Fever'] & data['Nausea']) | (data['Fatigue'] & data['Muscle_Pain'])).astype(int)
+
+    # Train the XGBoost model
     X = data.drop(columns=['Malaria'])
     y = data['Malaria']
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-    model = RandomForestClassifier(n_estimators=100, random_state=42)
+    model = XGBClassifier(use_label_encoder=False, eval_metric='logloss')
     model.fit(X_train, y_train)
     accuracy = accuracy_score(y_test, model.predict(X_test)) * 100
-    return model, accuracy
+    cm = confusion_matrix(y_test, model.predict(X_test))
+    return model, accuracy, cm
 
 # Train the model and cache it
-model, accuracy = train_model()
+model, accuracy, cm = train_model()
 
 # Display Model Performance
 st.write("### 📊 Model Performance")
 st.metric("Accuracy", f"{accuracy:.2f}%")
+
+# Display Confusion Matrix
+st.write("### 📊 Confusion Matrix")
+fig, ax = plt.subplots()
+sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', ax=ax)
+st.pyplot(fig)
 
 # User Input for Prediction
 st.write("### ✨ Make a Prediction")
@@ -52,7 +62,8 @@ fatigue = st.selectbox("Do you have Fatigue?", ["No", "Yes"]) == "Yes"
 if st.button("🚀 Predict Malaria"):
     user_input = np.array([[fever, headache, muscle_pain, nausea, fatigue]]).astype(int)
     prediction = model.predict(user_input)
+    probability = model.predict_proba(user_input)[0][1] * 100
     if prediction[0] == 1:
-        st.error("⚠️ The model predicts: You are likely to have Malaria.")
+        st.error(f"⚠️ The model predicts: You are likely to have Malaria. ({probability:.2f}% confidence)")
     else:
-        st.success("✅ The model predicts: You are NOT likely to have Malaria.")
+        st.success(f"✅ The model predicts: You are NOT likely to have Malaria. ({100 - probability:.2f}% confidence)")
