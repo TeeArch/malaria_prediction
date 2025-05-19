@@ -14,9 +14,9 @@ st.write("This is a robust Malaria prediction model using XGBoost, deployed with
 
 @st.cache_resource
 def train_model():
-    # Simulate a More Realistic Synthetic Dataset
+    # Simulate a Larger and More Realistic Synthetic Dataset
     np.random.seed(42)
-    data_size = 1000
+    data_size = 10000  # Larger dataset for better learning
     data = pd.DataFrame({
         'Fever': np.random.randint(0, 2, data_size),
         'Headache': np.random.randint(0, 2, data_size),
@@ -25,8 +25,12 @@ def train_model():
         'Fatigue': np.random.randint(0, 2, data_size)
     })
 
-    # Create realistic Malaria patterns
-    data['Malaria'] = ((data['Fever'] & data['Headache']) | (data['Fever'] & data['Nausea']) | (data['Fatigue'] & data['Muscle_Pain'])).astype(int)
+    # Create more variable Malaria conditions
+    data['Malaria'] = (
+        (data['Fever'] & data['Headache']) | 
+        ((data['Fever'] | data['Nausea']) & (data['Fatigue'] | data['Muscle_Pain'])) | 
+        (data['Fever'] & np.random.rand(data_size) > 0.3)
+    ).astype(int)
 
     # Train the XGBoost model
     X = data.drop(columns=['Malaria'])
