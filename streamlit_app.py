@@ -3,9 +3,7 @@ import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
 from xgboost import XGBClassifier
-from sklearn.metrics import accuracy_score, confusion_matrix
-import matplotlib.pyplot as plt
-import seaborn as sns
+from sklearn.metrics import accuracy_score
 
 # Streamlit UI
 st.set_page_config(page_title='Malaria Prediction Model', page_icon='🦟', layout='centered')
@@ -39,21 +37,14 @@ def train_model():
     model = XGBClassifier(use_label_encoder=False, eval_metric='logloss')
     model.fit(X_train, y_train)
     accuracy = accuracy_score(y_test, model.predict(X_test)) * 100
-    cm = confusion_matrix(y_test, model.predict(X_test))
-    return model, accuracy, cm
+    return model, accuracy
 
 # Train the model and cache it
-model, accuracy, cm = train_model()
+model, accuracy = train_model()
 
 # Display Model Performance
 st.write("### 📊 Model Performance")
 st.metric("Accuracy", f"{accuracy:.2f}%")
-
-# Display Confusion Matrix
-st.write("### 📊 Confusion Matrix")
-fig, ax = plt.subplots()
-sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', ax=ax)
-st.pyplot(fig)
 
 # User Input for Prediction
 st.write("### ✨ Make a Prediction")
